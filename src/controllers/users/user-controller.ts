@@ -1,12 +1,14 @@
 import * as GoogleAuth from "google-auth-library";
+
 import * as Hapi from "hapi";
 import database from "../../";
 import { IServerConfigurations } from "../../configurations";
-import { NotesModel } from "../../models/notes-model";
+// import { NotesModel } from "../../models/notes-model";
+
 import { UserModel } from "../../models/user-model";
 
 import * as fs from "fs";
-import * as Boom from "boom";
+import * as Boom from "boom";   
 import * as nconf from "nconf";
 
 import * as Configs from "../../configurations";
@@ -26,13 +28,15 @@ export default class UserController {
     private configs: IServerConfigurations;
     private database: any;
     private userModel: UserModel;
-    private notesModel: NotesModel;
+    // private notesModel: NotesModel;
 
     constructor(configs: IServerConfigurations, database: any) {
         this.database = database;
         this.configs = configs;
         this.userModel = new UserModel(this.configs);
-        this.notesModel = new NotesModel(this.configs);
+        // this.notesModel = new NotesModel(this.configs);
+
+
     }
 
     public loginUser(request, h) {
@@ -42,28 +46,38 @@ export default class UserController {
         return new Promise((resolve, reject) => {
 
             client.verifyIdToken(request.payload.idToken, this.configs.googleAuth.clientId, (error, login) => {
+
                 if (error) {
                     return console.error(error);
                 }
                 let googleAuthPayload = login.getPayload();
 
                 let isFacilitator = this.configs.facilitatorEmails.indexOf(googleAuthPayload['email']) > -1;
+
+
+
                 let isAdmin = false,
                     isAlumni = false;
 
                 let userObj = {
                     email: googleAuthPayload['email'],
                     name: googleAuthPayload['name'],
-                    profilePicture: googleAuthPayload['picture'],
-                    googleUserId: googleAuthPayload['sub'],
+                    profile_picture: googleAuthPayload['picture'],
+                    google_user_id: googleAuthPayload['sub'],
                 };
+
 
                 this.userModel.upsert(userObj, { 'email': userObj['email'] }, true)
                     .then((user) => {
+
+
                         return database('user_roles').select('*')
-                            .where({ 'user_roles.userId': user.id })
+                            .where({ 'user_roles.user_id': user.id })
                             .then((rows) => {
+
                                 if (rows.length < 1) {
+                                    // console.log(rows.length);
+
                                     return Promise.resolve({
                                         shouldCreateRole: true,
                                         user
@@ -79,17 +93,23 @@ export default class UserController {
                     .then((response) => {
                         const { shouldCreateRole, user } = response;
 
+
                         if (shouldCreateRole === true) {
+
                             // when the user signup for the first time or
                             // didn't have any user_roles
+
+
                             let userRoles = {
-                                userId: user.id
+                                user_id: user.id
+
                             };
                             // if he/she is a facilitator
                             if (isFacilitator) {
                                 userRoles['roles'] = 'facilitator';
                                 userRoles['center'] = 'all';
                             };
+
 
                             return database('user_roles').insert(userRoles)
                                 .then(() => {
@@ -106,20 +126,22 @@ export default class UserController {
                             let shouldCreateFacilitatorRole =
                                 database('user_roles').select('*')
                                     .where({
-                                        'user_roles.userId': user.id,
+                                        'user_roles.user_id': user.id,
                                         'user_roles.roles': 'facilitator',
                                         'user_roles.center': 'all'
                                     })
                                     .then((rows) => {
+
                                         // if user had been added as facilitator after joining SARAL
                                         if (rows.length < 1 && isFacilitator) {
+
                                             return Promise.resolve({ createFacilitatorRole: true });
                                         } else if (rows.length > 1 && !isFacilitator) {
                                             // if he/she has been removed as facilitator from
                                             // config file but is still a facilitator in the DB
                                             return database('user_roles').where({
                                                 'user_roles.roles': 'facilitator',
-                                                'user_roles.userId': user.id,
+                                                'user_roles.user_id': user.id,
                                                 'user_roles.center': 'all'
                                             })
                                                 .delete()
@@ -136,13 +158,17 @@ export default class UserController {
                                     if (createFacilitatorRole === true) {
                                         // create the facilitator role for the user who is already
                                         // in the platform but have been added as facilitator in config file.
+
                                         return database('user_roles')
+
                                             .insert({
-                                                'user_roles.userId': user.id,
+                                                'user_roles.user_id': user.id,
                                                 'user_roles.roles': 'facilitator',
                                                 'user_roles.center': 'all',
                                             })
-                                            .then((rows) => Promise.resolve());
+                                            .then((rows) => Promise.resolve())
+
+
 
                                     } else {
                                         // TODO: just update the user_roles values.
@@ -154,12 +180,14 @@ export default class UserController {
                                     return database('user_roles')
                                         .select('*')
                                         .where({
-                                            'user_roles.userId': user.id,
+                                            'user_roles.user_id': user.id,
                                         });
                                 })
                                 .then((rows) => {
+
                                     // get the roles of the users
                                     for (let i = 0; i < rows.length; i++) {
+
                                         if (rows[i].roles === "facilitator") {
                                             isFacilitator = true;
                                         } else if (rows[i].roles === "admin") {
@@ -179,11 +207,15 @@ export default class UserController {
                         }
                     })
                     .then((user) => {
+
                         resolve({
                             'user': user,
                             'jwt': this.userModel.getJWTToken(user)
                         });
+
+
                     });
+
             });
         });
     }
@@ -192,6 +224,7 @@ export default class UserController {
         let id = request.params.userId;
         return new Promise((resolve, reject) => {
             this.userModel.findOne({ id: id }).then(obj => {
+
                 resolve(obj);
             });
         });
@@ -204,10 +237,10 @@ export default class UserController {
      */
     public updateUserInfo(request, h) {
         let userDeatils = {
-            githubLink: request.payload.githubLink,
-            linkedinLink: request.payload.linkedinLink,
-            mediumLink: request.payload.mediumLink,
-            profilePicture: null
+            github_link: request.payload.github_link,
+            linkedin_link: request.payload.linkedin_link,
+            medium_link: request.payload.medium_link,
+            profile_picture: null
         };
 
         let that = this;
@@ -232,7 +265,7 @@ export default class UserController {
             );
 
             var imagepath =
-                "img/avatar/avatar_" + request.userId + "." + extension;
+                "img/avatar/avatar_" + request.user_id + "." + extension;
 
             fs.writeFile(imagepath, base64Data, "base64", function (err) {
                 if (err) {
@@ -281,14 +314,14 @@ export default class UserController {
                         } else {
                             //
 
-                            userDeatils.profilePicture =
+                            userDeatils.profile_picture =
                                 "https://s3.ap-south-1.amazonaws.com/saralng/" +
                                 imagepath;
                             //
                             that.userModel
                                 .upsert(
                                     userDeatils,
-                                    { id: request.params.userId },
+                                    { id: request.params.user_id },
                                     true
                                 )
                                 .then(user => {
@@ -300,56 +333,56 @@ export default class UserController {
             });
         });
     }
+    // public postUserNotes(request, h) {
+    //     let note = {
+    //         student: request.params.userId,
+    //         text: request.payload.text,
+    //         facilitator: request.user_id
+    //     };
+    //     return new Promise((resolve, reject) => {
+    //         this.notesModel.insert(note).then(status => {
+    //             resolve({ status: status });
+    //         });
+    //     });
+    // }
 
-    public postUserNotes(request, h) {
-        let note = {
-            student: request.params.userId,
-            text: request.payload.text,
-            facilitator: request.userId
-        };
-        return new Promise((resolve, reject) => {
-            this.notesModel.insert(note).then(status => {
-                resolve({ status: status });
-            });
-        });
-    }
+    // public getUserNotes(request, h) {
+    //     return new Promise((resolve, reject) => {
+    //         this.notesModel.getUserNotes(request.params.userId).then(rows => {
+    //             resolve({ data: rows });
+    //         });
+    //     });
+    // }
 
-    public getUserNotes(request, h) {
-        return new Promise((resolve, reject) => {
-            this.notesModel.getUserNotes(request.params.userId).then(rows => {
-                resolve({ data: rows });
-            });
-        });
-    }
+    // public deleteUserNoteById(request: Hapi.Request, reply: Hapi.IReply) {
+    //     return new Promise((resolve, reject) => {
+    //         this.notesModel.del(request.params.noteId).then(status => {
+    //             resolve({ status: status });
+    //         });
+    //     });
+    // }
 
-    public deleteUserNoteById(request: Hapi.Request, reply: Hapi.IReply) {
-        return new Promise((resolve, reject) => {
-            this.notesModel.del(request.params.noteId).then(status => {
-                resolve({ status: status });
-            });
-        });
-    }
 
     public getGitHubAccessUrl(request, h) {
         const email = request.params.email;
         const githubAccessKey = serverConfigs.githubAccess;
         return new Promise((resolve, reject) => {
             this.userModel.findOne({ email: email }).
-            then(obj => {
-              const crypto = require('crypto');
-              const SCHOOL_ID = githubAccessKey.SCHOOL_ID; //configuration
-              const student_id = obj.id //fetch from db for email '%@navgurukul.org'
-              const SECRET_KEY = githubAccessKey.SECRET_KEY //configuration
-              const message_id = SCHOOL_ID.toString() + student_id.toString();
-              const hashDigest = crypto.
-                createHmac('sha256', SECRET_KEY).
-                update(message_id).
-                digest('hex');
+                then(obj => {
+                    const crypto = require('crypto');
+                    const SCHOOL_ID = githubAccessKey.SCHOOL_ID; //configuration
+                    const student_id = obj.id //fetch from db for email '%@navgurukul.org'
+                    const SECRET_KEY = githubAccessKey.SECRET_KEY //configuration
+                    const message_id = SCHOOL_ID.toString() + student_id.toString();
+                    const hashDigest = crypto.
+                        createHmac('sha256', SECRET_KEY).
+                        update(message_id).
+                        digest('hex');
 
-              const url = "https://education.github.com/student/verify?school_id=" + SCHOOL_ID + "&student_id=" + student_id + "&signature=" + hashDigest;
+                    const url = "https://education.github.com/student/verify?school_id=" + SCHOOL_ID + "&student_id=" + student_id + "&signature=" + hashDigest;
 
-              resolve({ "url": url });
-            });
+                    resolve({ "url": url });
+                });
         });
     }
 }

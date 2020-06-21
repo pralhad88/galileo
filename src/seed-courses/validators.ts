@@ -21,8 +21,8 @@ import { courseInfoSchema } from './schema';
 // Eg. if 1.2 is given this will give 1.3.
 //     if 1 is given this will give 2
 
-let _nextSeqNum = (sequenceNum) => {
-    let num = String(sequenceNum);
+let _nextSeqNum = (sequence_num) => {
+    let num = String(sequence_num);
     let tokens = num.split('.');
     if (tokens.length === 1) {
         return Number(num) + 1;
@@ -43,8 +43,8 @@ export const validateSequenceNumber = function(exercises, depthLevel?) {
         if  (!exercises[i+1]) {
             continue;
         }
-        if (exercises[i+1].sequenceNum !== _nextSeqNum(exercises[i].sequenceNum)) {
-            let msg = exercises[i].sequenceNum + " and " + _nextSeqNum(exercises[i].sequenceNum) +
+        if (exercises[i+1].sequence_num !== _nextSeqNum(exercises[i].sequence_num)) {
+            let msg = exercises[i].sequence_num + " and " + _nextSeqNum(exercises[i].sequence_num) +
                 " don't have sequential sequence numbers.";
             showErrorAndExit(msg);
         }
@@ -52,7 +52,7 @@ export const validateSequenceNumber = function(exercises, depthLevel?) {
             let childExsValidated = validateSequenceNumber(exercises[i], depthLevel+1);
             if (!childExsValidated) {
                 showErrorAndExit("Child ecourseDirxercises of Sequence Number "
-                    + exercises[i].sequenceNum + " are not in the sequential order.");
+                    + exercises[i].sequence_num + " are not in the sequential order.");
             }
         }
     }
@@ -90,7 +90,7 @@ export const validateCourseDirParam = function() {
 // Validate and return the course info
 
 export const validateCourseInfo = function() {
-    let courseInfoFile = globals.courseDir + '/details/info.md';
+    let courseInfoFile = globals.courseDir + '/info.md';
     return fs.readFile(courseInfoFile, 'utf-8').then( (data) => {
         let tokens = marked.lexer(data);
         let ngMetaBlock = tokens[0];
@@ -104,6 +104,6 @@ export const validateCourseInfo = function() {
 
     }).catch( (err) => {
         console.log(err);
-        showErrorAndExit("`details/info.md` has some problem. Check the above error to understand it better.");
+        showErrorAndExit("`info.md` has some problem. Check the above error to understand it better.");
     });
 };

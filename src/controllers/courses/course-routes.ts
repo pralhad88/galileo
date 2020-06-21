@@ -45,6 +45,31 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
     });
 
     server.route({
+        method: 'PUT',
+        path: '/updateCourses{name}',
+        config: {
+            description: 'update the courses by Courses name',
+            validate: {
+                payload: {
+                    type: Joi.string().allow('html', 'js', 'python').required(),
+                    days_to_complete: Joi.number().required().strict(false),
+                    short_description: Joi.string().required(),
+                    logo: Joi.string(),
+                }
+            },
+            response: {
+                schema: {
+                    "update": Joi.bool()
+                }
+            },
+            auth: 'jwt',
+            tags: ['api'],
+            handler: courseController.updateCourses
+        }
+    });
+
+
+    server.route({
         method: 'GET',
         path: '/courses/{courseId}/topics',
         config: {
@@ -100,10 +125,10 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
                 query: {
                     slug: Joi.string().description('write exercise slug here')
                 }
-            },
+            // },
             // response: {
             //     schema: exerciseSchema
-            // },
+            },
             auth: {
                 strategy: 'jwt',
                 mode: 'optional'
@@ -133,28 +158,28 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
         }
     });
 
-    server.route({
-        method: 'GET',
-        path: '/courses/{courseId}/notes',
-        config: {
-            description: 'Get any additional notes attached with the course.',
-            validate: {
-                params: {
-                    courseId: Joi.number()
-                }
-            },
-            response: {
-                schema: Joi.object({
-                    "notes": Joi.string()
-                        .default("# Notes Title ## Not sub-title Some content. \n More.")
-                        .description("Notes in markdown.")
-                })
-            },
-            auth: 'jwt',
-            tags: ['api'],
-            handler: courseController.getCourseNotes
-        }
-    });
+    // server.route({
+    //     method: 'GET',
+    //     path: '/courses/{courseId}/notes',
+    //     config: {
+    //         description: 'Get any additional notes attached with the course.',
+    //         validate: {
+    //             params: {
+    //                 courseId: Joi.number()
+    //             }
+    //         },
+    //         response: {
+    //             schema: Joi.object({
+    //                 "notes": Joi.string()
+    //                     .default("# Notes Title ## Not sub-title Some content. \n More.")
+    //                     .description("Notes in markdown.")
+    //             })
+    //         },
+    //         auth: 'jwt',
+    //         tags: ['api'],
+    //         handler: courseController.getCourseNotes
+    //     }
+    // });
 
     server.route({
         method: 'POST',
@@ -226,9 +251,9 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
             description: 'Add course relation in the course with the given ID.',
             validate: {
                 params: {
-                    // userId: Joi.number(),
+                    // user_id: Joi.number(),
                     courseId: Joi.number(),
-                    reliesOn: Joi.number().description("Id of the course on which courseId relies on."),
+                    reliesOn: Joi.number().description("Id of the course on which course_id relies on."),
                 }
             },
             response: {
@@ -258,7 +283,7 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
                     "data": Joi.array().items(Joi.object({
                         id: Joi.number().required(),
                         courseId: Joi.number(),
-                        reliesOn: Joi.number().description("Id of the course on which courseId relies on."),
+                        reliesOn: Joi.number().description("Id of the course on which course_id relies on."),
                     })),
                     "message": Joi.string()
                 })

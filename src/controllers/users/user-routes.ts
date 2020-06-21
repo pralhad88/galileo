@@ -9,6 +9,8 @@ import * as Boom from 'boom';
 export default function (server: Hapi.Server, serverConfigs: IServerConfigurations, database: any) {
 
     const userController = new UserController(serverConfigs, database);
+    
+    
     server.bind(userController);
 
     server.route({
@@ -93,9 +95,9 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
                     userId: Joi.number().required(),
                 },
                 payload: {
-                    githubLink: Joi.string().regex(/(ftp|http|https):\/\/?(?:www\.)?github.com(\w+:{0,1}\w*@)?(\S+)(:([0-9])+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).allow(null).uri(),
-                    linkedinLink: Joi.string().regex(/(ftp|http|https):\/\/?(?:www\.)?linkedin.com(\w+:{0,1}\w*@)?(\S+)(:([0-9])+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).allow(null).uri(),
-                    mediumLink: Joi.string().regex(/(ftp|http|https):\/\/?(?:www\.)?medium.com(\w+:{0,1}\w*@)?(\S+)(:([0-9])+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).allow(null).uri(),
+                    github_link: Joi.string().regex(/(ftp|http|https):\/\/?(?:www\.)?github.com(\w+:{0,1}\w*@)?(\S+)(:([0-9])+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).allow(null).uri(),
+                    linkedin_link: Joi.string().regex(/(ftp|http|https):\/\/?(?:www\.)?linkedin.com(\w+:{0,1}\w*@)?(\S+)(:([0-9])+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).allow(null).uri(),
+                    medium_link: Joi.string().regex(/(ftp|http|https):\/\/?(?:www\.)?medium.com(\w+:{0,1}\w*@)?(\S+)(:([0-9])+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/).allow(null).uri(),
                     uploadImage:Joi.string().allow(null)
                 },
                 failAction: async (request, h, err) => {
@@ -139,82 +141,128 @@ export default function (server: Hapi.Server, serverConfigs: IServerConfiguratio
         }
     });
 
+    // server.route({
+    //     method: 'POST',
+    //     path: '/users/{userId}/notes',
+    //     config: {
+    //         description: 'Will be used by the facilitator to create a new note against a user.',
+    //         auth: 'jwt',
+    //         validate: {
+    //             params: {
+    //                 userId: Joi.number().required(),
+    //             },
+    //             payload: Joi.object({
+    //                 text: Joi.string().required()
+    //             })
+    //         },
+    //         response: {
+    //             schema: {
+    //                 status: Joi.bool().required()
+    //             }
+    //         },
+    //         plugins: {
+    //             'hapi-swagger': {
+    //                 responses: {
+    //                     '201': {
+    //                         'description': 'Note created successfully.'
+    //                     }
+    //                 }
+    //             }
+    //         },
+    //         tags: ['api'],
+    //         handler: userController.postUserNotes
+    //     }
+    // });
 
-    server.route({
-        method: 'POST',
-        path: '/users/{userId}/notes',
-        config: {
-            description: 'Will be used by the facilitator to create a new note against a user.',
-            auth: 'jwt',
-            validate: {
-                params: {
-                    userId: Joi.number().required(),
-                },
-                payload: Joi.object({
-                    text: Joi.string().required()
-                })
-            },
-            response: {
-                schema: {
-                    status: Joi.bool().required()
-                }
-            },
-            plugins: {
-                'hapi-swagger': {
-                    responses: {
-                        '201': {
-                            'description': 'Note created successfully.'
-                        }
-                    }
-                }
-            },
-            tags: ['api'],
-            handler: userController.postUserNotes
-        }
-    });
+    // server.route({
+    //     method: 'GET',
+    //     path: '/users/{userId}/notes',
+    //     config: {
+    //         description: 'Get a list of notes (reverse chronologically sorted) of the user.',
+    //     method: 'POST',
+    //     path: '/users/{userId}/notes',
+    //     config: {
+    //         description: 'Will be used by the facilitator to create a new note against a user.',
+    //         auth: 'jwt',
+    //         validate: {
+    //             params: {
+    //                 userId: Joi.number().required(),
 
-    server.route({
-        method: 'GET',
-        path: '/users/{userId}/notes',
-        config: {
-            description: 'Get a list of notes (reverse chronologically sorted) of the user.',
-            auth: 'jwt',
-            validate: {
-                params: {
-                    userId: Joi.number().required(),
-                }
-            },
-            response: {
-                schema: Joi.object({
-                    data: Joi.array().items(noteSchema)
-                })
-            },
-            tags: ['api'],
-            handler: userController.getUserNotes
-        }
-    });
+    //             }
+    //         },
+    //         response: {
+    //             schema: Joi.object({
+    //                 data: Joi.array().items(noteSchema)
+    //             })
+    //         },
+    //         tags: ['api'],
+    //         handler: userController.getUserNotes
+    //             },
+    //             payload: Joi.object({
+    //                 text: Joi.string().required()
+    //             })
+    //         },
+    //         response: {
+    //             schema: {
+    //                 status: Joi.bool().required()
+    //             }
+    //         },
+    //         plugins: {
+    //             'hapi-swagger': {
+    //                 responses: {
+    //                     '201': {
+    //                         'description': 'Note created successfully.'
+    //                     }
+    //                 }
+    //             }
+    //         },
+    //         tags: ['api'],
+    //         handler: userController.postUserNote
+    //     }
+    // });
 
-    server.route({
-        method: 'DELETE',
-        path: '/users/{userId}/notes/{noteId}',
-        config: {
-            description: 'Delete a note of the user with a given ID',
-            auth: 'jwt',
-            validate: {
-                params: {
-                    userId: Joi.number().required(),
-                    noteId: Joi.number().required(),
-                }
-            },
-            response: {
-                schema: Joi.object({
-                    status: Joi.bool().required()
-                })
-            },
-            tags: ['api'],
-            handler: userController.deleteUserNoteById
-        }
-    });
+    // server.route({
+    //     method: 'GET',
+    //     path: '/users/{userId}/notes',
+    //     config: {
+    //         description: 'Get a list of notes (reverse chronologically sorted) of the user.',
+    //         auth: 'jwt',
+    //         validate: {
+    //             params: {
+    //                 userId: Joi.number().required(),
+    //             }
+    //         },
+    //         response: {
+    //             schema: Joi.object({
+    //                 data: Joi.array().items(noteSchema)
+    //             })
+    //         },
+    //         tags: ['api'],
+    //         handler: userController.getUserNotes
+    //     }
+    // });
+
+    // server.route({
+    //     method: 'DELETE',
+    //     path: '/users/{userId}/notes/{noteId}',
+    //     config: {
+    //         description: 'Delete a note of the user with a given ID',
+    //         auth: 'jwt',
+    //         validate: {
+    //             params: {
+    //                 userId: Joi.number().required(),
+    //                 noteId: Joi.number().required(),
+    //             }
+    //         },
+    //         response: {
+    //             schema: Joi.object({
+    //                 status: Joi.bool().required()
+    //             })
+    //         },
+    //         tags: ['api'],
+    //         handler: userController.deleteUserNoteById
+    //     }
+    // });
 
     server.route({
         method: 'GET',
